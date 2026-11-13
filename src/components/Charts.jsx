@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { fmt, periodoLegible } from "../lib/format.js";
+import { fmt } from "../lib/format.js";
+import { escalaEje } from "../lib/escala.js";
 
 // Gráficos SVG propios (sin librerías). Reglas: marcas finas, 2px de separación entre
 // segmentos, grilla tenue, leyenda siempre que haya 2 o más series, tooltip al pasar el mouse.
@@ -22,11 +23,14 @@ const Tip = ({ tip }) =>
     </div>
   ) : null;
 
-function niceMax(v) {
-  if (v <= 0) return 1;
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  const n = v / p;
-  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+/** Líneas de grilla y números del eje vertical. */
+function EjeY({ esc, y, x1, x2 }) {
+  return esc.ticks.map((v, i) => (
+    <g key={v}>
+      <line className={i === 0 ? "axis-line" : "grid-line"} x1={x1} x2={x2} y1={y(v)} y2={y(v)} />
+      <text x={x1 - 8} y={y(v) + 4} textAnchor="end" className="tnum">{fmt(v, esc.decimales)}</text>
+    </g>
+  ));
 }
 
 // Rectángulo con las esquinas superiores redondeadas (el extremo de datos).
@@ -111,25 +115,17 @@ export function BarrasApiladas({ filas }) {
 export function BarrasVerticales({ datos, unidad = "tCO₂e", decimales = 2 }) {
   const { ref, tip, show, hide } = useTip();
   const W = 640, H = 260, m = { t: 24, r: 16, b: 44, l: 56 };
-  const max = niceMax(Math.max(...datos.map((d) => d.valor), 0));
+  const esc = escalaEje(Math.max(...datos.map((d) => d.valor), 0));
   const ancho = W - m.l - m.r, alto = H - m.t - m.b;
   const paso = ancho / datos.length;
   const bw = Math.min(72, paso * 0.5);
-  const y = (v) => m.t + alto - (v / max) * alto;
+  const y = (v) => m.t + alto - (v / esc.max) * alto;
 
   return (
     <div className="chart" ref={ref}>
       <div className="chart-scroll">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Comparación entre edificios en ${unidad}`}>
-        {[0, 1, 2, 3, 4].map((i) => {
-          const v = (max / 4) * i;
-          return (
-            <g key={i}>
-              <line className={i === 0 ? "axis-line" : "grid-line"} x1={m.l} x2={W - m.r} y1={y(v)} y2={y(v)} />
-              <text x={m.l - 8} y={y(v) + 4} textAnchor="end" className="tnum">{fmt(v, max < 10 ? 1 : 0)}</text>
-            </g>
-          );
-        })}
+        <EjeY esc={esc} y={y} x1={m.l} x2={W - m.r} />
         {datos.map((d, i) => {
           const x = m.l + paso * i + (paso - bw) / 2;
           const h = alto - (y(d.valor) - m.t);
@@ -153,43 +149,48 @@ export function BarrasVerticales({ datos, unidad = "tCO₂e", decimales = 2 }) {
   );
 }
 
-/** Evolución temporal: emisiones por período. */
+/**
+ * Evolución mensual dentro de un año. Recibe los 12 meses: { clave, etiqueta, etiquetaLarga, valor }.
+ * Un mes sin datos (valor null) no se dibuja y corta la línea: no se unen meses salteados.
+ */
 export function Evolucion({ puntos }) {
   const { ref, tip, show, hide } = useTip();
-  const W = 640, H = 240, m = { t: 24, r: 28, b: 40, l: 56 };
-  const max = niceMax(Math.max(...puntos.map((p) => p.valor), 0));
+  const W = 640, H = 240, m = { t: 24, r: 16, b: 40, l: 56 };
+  const conDato = puntos.filter((p) => p.valor !== null);
+  const esc = escalaEje(Math.max(...conDato.map((p) => p.valor), 0));
   const ancho = W - m.l - m.r, alto = H - m.t - m.b;
-  const x = (i) => (puntos.length === 1 ? m.l + ancho / 2 : m.l + (ancho / (puntos.length - 1)) * i);
-  const y = (v) => m.t + alto - (v / max) * alto;
-  const linea = puntos.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.valor)}`).join(" ");
+  const paso = ancho / puntos.length;
+  const x = (i) => m.l + paso * (i + 0.5);
+  const y = (v) => m.t + alto - (v / esc.max) * alto;
+
+  let linea = "";
+  puntos.forEach((p, i) => {
+    if (p.valor === null) return;
+    const sigue = i > 0 && puntos[i - 1].valor !== null;
+    linea += `${sigue ? "L" : "M"}${x(i)},${y(p.valor)} `;
+  });
 
   return (
     <div className="chart" ref={ref}>
       <div className="chart-scroll">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Evolución mensual de las emisiones en toneladas de CO2 equivalente">
-        {[0, 1, 2, 3, 4].map((i) => {
-          const v = (max / 4) * i;
-          return (
-            <g key={i}>
-              <line className={i === 0 ? "axis-line" : "grid-line"} x1={m.l} x2={W - m.r} y1={y(v)} y2={y(v)} />
-              <text x={m.l - 8} y={y(v) + 4} textAnchor="end" className="tnum">{fmt(v, max < 10 ? 1 : 0)}</text>
-            </g>
-          );
-        })}
-        {puntos.length > 1 && <path d={linea} fill="none" stroke="var(--series-1)" strokeWidth="2" strokeLinejoin="round" />}
+        <EjeY esc={esc} y={y} x1={m.l} x2={W - m.r} />
+        {linea.includes("L") && <path d={linea} fill="none" stroke="var(--series-1)" strokeWidth="2" strokeLinejoin="round" />}
         {puntos.map((p, i) => (
-          <g key={p.periodo}>
-            <circle cx={x(i)} cy={y(p.valor)} r="5" fill="var(--series-1)" stroke="var(--surface)" strokeWidth="2" />
-            <circle
-              cx={x(i)} cy={y(p.valor)} r="16" fill="transparent" tabIndex={0}
-              aria-label={`${periodoLegible(p.periodo)}: ${fmt(p.valor, 2)} tCO2e`}
-              onMouseMove={(e) => show(e, <><b>{periodoLegible(p.periodo)}</b>{fmt(p.valor, 2)} tCO₂e</>)}
-              onMouseLeave={hide}
-            />
-            {(puntos.length <= 13 || i === puntos.length - 1) && (
-              <text x={x(i)} y={y(p.valor) - 12} textAnchor="middle" className="ink tnum">{fmt(p.valor, 1)}</text>
+          <g key={p.clave}>
+            {p.valor !== null && (
+              <>
+                <circle cx={x(i)} cy={y(p.valor)} r="5" fill="var(--series-1)" stroke="var(--surface)" strokeWidth="2" />
+                <circle
+                  cx={x(i)} cy={y(p.valor)} r="16" fill="transparent" tabIndex={0}
+                  aria-label={`${p.etiquetaLarga}: ${fmt(p.valor, 2)} tCO2e`}
+                  onMouseMove={(e) => show(e, <><b>{p.etiquetaLarga}</b>{fmt(p.valor, 2)} tCO₂e</>)}
+                  onMouseLeave={hide}
+                />
+                <text x={x(i)} y={y(p.valor) - 12} textAnchor="middle" className="ink tnum">{fmt(p.valor, 1)}</text>
+              </>
             )}
-            <text x={x(i)} y={H - 14} textAnchor="middle">{periodoLegible(p.periodo)}</text>
+            <text x={x(i)} y={H - 14} textAnchor="middle">{p.etiqueta}</text>
           </g>
         ))}
       </svg>

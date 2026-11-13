@@ -36,6 +36,7 @@
   "edificios": [
     {
       "id": "EDI-FRC-01",
+      "universidad_id": "UTN-FRC",
       "nombre": "Ciudad Universitaria (suministro media tensión)",
       "direccion": "Maestro López esq. Cruz Roja Argentina, Córdoba (Mza 022 Lote 006)",
       "distribuidora": "EPEC",
@@ -43,10 +44,12 @@
       "contrato_n": "00420551/02",
       "tension": "Media Tensión",
       "tarifa": "3GDES.CON (cód. 350)",
-      "nombre_corto": "Ciudad Universitaria"
+      "nombre_corto": "Ciudad Universitaria",
+      "medidor_n": null
     },
     {
       "id": "EDI-FRC-02",
+      "universidad_id": "UTN-FRC",
       "nombre": "Suministro Av. Armada Argentina 4050 (baja tensión)",
       "direccion": "Av. Armada Argentina 4050, Sta. Isabel 3ª, Córdoba",
       "distribuidora": "EPEC",
@@ -54,7 +57,8 @@
       "contrato_n": "00592560/04",
       "tension": "Baja Tensión",
       "tarifa": "3GDES.CO (cód. 350)",
-      "nombre_corto": "Av. Armada Argentina"
+      "nombre_corto": "Av. Armada Argentina",
+      "medidor_n": null
     }
   ],
   "factores_emision": [
@@ -83,6 +87,8 @@
   ],
   "datos_actividad": [
     {
+      "id": "ACT-001",
+      "dimension_id": 1,
       "edificio_id": "EDI-FRC-01",
       "periodo": "2024-08",
       "comprobante": "F 000683514600",
@@ -94,7 +100,6 @@
       "demanda_autorizada_kw": 150,
       "coseno_fi": 0.9904,
       "total_facturado_ars": 21899102.2,
-      "id": "ACT-001",
       "consumo_kwh": 104688,
       "unidad": "kWh",
       "alcance": 2,
@@ -102,6 +107,8 @@
       "calidad": "real - transcripto de factura (imagen de baja resolución, verificar)"
     },
     {
+      "id": "ACT-002",
+      "dimension_id": 1,
       "edificio_id": "EDI-FRC-02",
       "periodo": "2024-08",
       "comprobante": "F 000683515888",
@@ -113,7 +120,6 @@
       "demanda_autorizada_kw": 46,
       "coseno_fi": 0.9967,
       "total_facturado_ars": 3345500.7,
-      "id": "ACT-002",
       "consumo_kwh": 15516,
       "unidad": "kWh",
       "alcance": 2,
@@ -124,9 +130,11 @@
   "resultados_emisiones": [
     {
       "actividad_id": "ACT-001",
+      "dimension_id": 1,
       "edificio_id": "EDI-FRC-01",
       "periodo": "2024-08",
       "consumo_kwh": 104688,
+      "factor_id": "FE-ELEC-ARG-2022",
       "factor_emision_kgco2e_kwh": 0.283,
       "emisiones_kgco2e": 29626.7,
       "emisiones_tco2e": 29.627,
@@ -135,9 +143,11 @@
     },
     {
       "actividad_id": "ACT-002",
+      "dimension_id": 1,
       "edificio_id": "EDI-FRC-02",
       "periodo": "2024-08",
       "consumo_kwh": 15516,
+      "factor_id": "FE-ELEC-ARG-2022",
       "factor_emision_kgco2e_kwh": 0.283,
       "emisiones_kgco2e": 4391.03,
       "emisiones_tco2e": 4.391,

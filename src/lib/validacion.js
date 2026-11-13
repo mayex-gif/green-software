@@ -2,13 +2,20 @@
 
 const num = (v) => (v === "" || v === null || v === undefined ? NaN : Number(v));
 
-export function validarActividad(form, existentes = []) {
+/** Mes en curso como "AAAA-MM" (hora local). */
+export function mesActual(hoy = new Date()) {
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function validarActividad(form, existentes = [], hoy = new Date()) {
   const e = {};
 
   if (!form.edificio_id) e.edificio_id = "Elegí un edificio.";
 
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(form.periodo || "")) {
     e.periodo = "Elegí un mes válido.";
+  } else if (form.periodo > mesActual(hoy)) {
+    e.periodo = "Ese mes todavía no llegó: no puede tener factura.";
   } else if (existentes.some((a) => a.edificio_id === form.edificio_id && a.periodo === form.periodo)) {
     e.periodo = "Ya hay una carga para ese edificio y ese mes.";
   }
