@@ -1,32 +1,5 @@
-import { useState } from "react";
-import { aKwh, factorEnKgPorKwh } from "../lib/calculo.js";
+import { factorEnKgPorKwh } from "../lib/calculo.js";
 import { fmt, periodoLegible } from "../lib/format.js";
-
-function Conversor() {
-  const [valor, setValor] = useState("1");
-  const [unidad, setUnidad] = useState("MWh");
-  const kwh = aKwh(valor || 0, unidad);
-  return (
-    <div>
-      <h3 style={{ marginBottom: 8 }}>Conversor de unidades</h3>
-      <div className="grid-fields" style={{ maxWidth: 560 }}>
-        <div className="field">
-          <label htmlFor="cv-valor">Energía</label>
-          <input id="cv-valor" type="number" min="0" step="any" value={valor} onChange={(e) => setValor(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="cv-unidad">Unidad</label>
-          <select id="cv-unidad" value={unidad} onChange={(e) => setUnidad(e.target.value)}>
-            <option>kWh</option><option>MWh</option><option>GWh</option>
-          </select>
-        </div>
-      </div>
-      <p className="muted" style={{ marginTop: 8 }}>
-        {fmt(Number(valor || 0), 3)} {unidad} = <b className="tnum">{fmt(kwh, 0)} kWh</b>. Para las emisiones: 1.000 kgCO₂e = 1 tCO₂e.
-      </p>
-    </div>
-  );
-}
 
 export default function Calculo({ factores, factorId, onFactor, resultados, edificios }) {
   const factor = factores.find((f) => f.id === factorId);
@@ -66,8 +39,6 @@ export default function Calculo({ factores, factorId, onFactor, resultados, edif
           </details>
         ))}
       </div>
-
-      <Conversor />
     </div>
   );
 }
