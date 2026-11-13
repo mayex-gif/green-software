@@ -11,6 +11,7 @@ Módulo frontend de carga, cálculo y visualización de la huella de carbono por
 | `src/lib/api.js` | Consultas y envíos a la API; usa datos locales si no está configurada. |
 | `data/` | `energia_electrica_grupo1.json` (modelo de datos y relevamiento) y `aumentos_epec_sep2025_sep2026.json`. |
 | `docs/` | Modelo de medición, documentación técnica y capturas. |
+| `tests/` | Pruebas del cálculo (`npm test`) y una API de prueba local para probar la integración. |
 
 ## Cómo correrlo
 
@@ -18,9 +19,11 @@ Requiere Node 18 o superior.
 
 ```bash
 npm install
-npm run dev        # desarrollo: http://localhost:5173
-npm run build      # genera la carpeta dist/
-npm run preview    # prueba local de dist/: http://localhost:4173
+npm run dev            # desarrollo: http://localhost:5173
+npm run build          # genera la carpeta dist/
+npm run preview        # prueba local de dist/: http://localhost:4173
+npm test               # pruebas del cálculo, la validación y los ejes
+npm run api-de-prueba  # API local que imita a la de la cátedra (ver docs/02, sección 7)
 ```
 
 ## Conectar la API central
@@ -33,11 +36,17 @@ Sin `VITE_CENTRAL_API_URL`, la pantalla muestra "Datos locales: API sin configur
 
 Las variables `VITE_*` quedan dentro del código que baja el navegador. No pongas claves que deban ser secretas. La API de la cátedra tiene que permitir CORS para que el navegador pueda consultarla.
 
-## Publicar en Render (Static Site)
+## Publicar
 
+Hoy está publicado en Vercel: https://green-software-beta.vercel.app/
+
+**Vercel** (actual): importar el repositorio; Vercel detecta Vite solo (compila con `npm run build` y publica `dist`). Las variables de entorno van en *Settings → Environment Variables*. La rama `main` actualiza la página principal; las demás ramas generan una vista previa aparte.
+
+**Render** (alternativa, Static Site):
 - **Build Command:** `npm install && npm run build`
 - **Publish Directory:** `dist`
-- **Variables de entorno:** `VITE_CENTRAL_API_URL` y, si hace falta, `VITE_CENTRAL_API_KEY`. Se aplican al compilar, así que después de cambiarlas hay que volver a desplegar.
+
+En los dos casos, las variables `VITE_CENTRAL_API_URL` y, si hace falta, `VITE_CENTRAL_API_KEY` se aplican al compilar: después de cambiarlas hay que volver a desplegar.
 
 ## Documentación
 

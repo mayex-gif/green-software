@@ -17,7 +17,7 @@
 3. Se obtiene el factor de emisión (de la API central; si no está disponible, el local de referencia).
 4. Se calcula `CO2e = kWh × FE` y se convierte a toneladas.
 5. Se guarda la traza de cada cálculo (valores de entrada, factor, fuente y fórmula).
-6. Se agregan resultados por edificio, mes y franja, y se calculan los indicadores.
+6. Se elige el año del inventario (año calendario) y se agregan los resultados de ese año por edificio, mes y franja. Se calculan los indicadores y la cobertura: cuántos de los 12 meses tiene cada suministro.
 
 Detalle de variables y fórmulas: `01-modelo-de-medicion.md`.
 
@@ -41,9 +41,11 @@ Enlaces:
 1. Cada suministro de EPEC corresponde a un edificio de la facultad. **Falta confirmar la asignación** (ver sección 9).
 2. El consumo del mes facturado representa el consumo del mes calendario.
 3. Se usa el factor promedio de la red (método basado en ubicación).
-4. El factor se expresa en kgCO₂e/kWh e incluye CO₂, CH₄ y N₂O (valores AR5, según SNIGEIAR).
+4. El factor 0,283 se toma como kgCO₂e/kWh, es decir, con CO₂, CH₄ y N₂O incluidos, según la nota al pie de la Tabla 5 de SNIGEIAR ("incluye emisiones de CO2, CH4 y N2O calculadas con AR5"). **Hay una ambigüedad:** en esa tabla la columna dice "kg CO2/kWh" y el CH₄ (0,0000167 kg/kWh) y el N₂O (0,0000097 kg/kWh) aparecen en columnas aparte. Si el 0,283 fuera solo CO₂, sumando CH₄ × 28 y N₂O × 265 (PCG AR5) quedaría **0,2860 kgCO₂e/kWh** (+1,1 %: 34,38 t en lugar de 34,02 t en el relevamiento base). A confirmar con la cátedra.
 5. No hay generación propia ni compra de energía renovable certificada.
 6. Los valores de las facturas de 2024 se usan como relevamiento base; el inventario anual real requiere facturas de los 12 meses.
+7. El año del inventario es el año calendario (enero a diciembre).
+8. Un "edificio" del módulo es en realidad un **suministro** de EPEC (un medidor). Ciudad Universitaria es un solo suministro para todo el campus: el consumo no se puede separar por edificio físico sin submedidores. Si otros grupos usan edificios físicos, hay que acordar con la cátedra cómo se relacionan.
 
 ## 5. Modelo de datos
 
@@ -66,23 +68,28 @@ erDiagram
 
     EDIFICIO {
         string id PK
+        string universidad_id FK
         string nombre
         string direccion
         string cliente_n
         string contrato_n
+        string medidor_n
         string tension
     }
     DATO_ACTIVIDAD {
         string id PK
+        int dimension_id FK
         string edificio_id FK
-        string periodo
+        string periodo "AAAA-MM"
         number pico_kwh
         number resto_kwh
         number valle_kwh
         number consumo_kwh
+        string unidad "kWh"
         number demanda_pico_kw
         number coseno_fi
         int alcance
+        string fuente_dato
         string calidad
     }
     FACTOR_EMISION {
@@ -94,7 +101,12 @@ erDiagram
     }
     RESULTADO_EMISION {
         string actividad_id FK
+        int dimension_id FK
         string factor_id FK
+        string edificio_id
+        string periodo
+        number consumo_kwh
+        number factor_emision_kgco2e_kwh
         number emisiones_kgco2e
         number emisiones_tco2e
         string formula
@@ -103,6 +115,12 @@ erDiagram
 
 `PROYECTO_MITIGACION` y `EMISION_EVITADA` existen en la base central pero este módulo no los usa.
 
+Relación con las entidades centrales:
+- **Universidad** y **dimensión**: claves `universidad_id` (en edificios) y `dimension_id` (en datos de actividad y resultados). Todo lo que se envía a la API lleva las dos.
+- **Período**: `periodo` se guarda como texto `AAAA-MM`; el período anual de la base central es su año.
+- **Unidad** y **fuente de datos**: se guardan como texto (`kWh`, "Factura EPEC…"). Si la base central usa identificadores, se reemplazan por esas claves al conectar la API.
+- **Factor de emisión**: cada resultado guarda `factor_id` y el valor aplicado.
+
 ### Diccionario de datos
 
 **edificios**
@@ -110,10 +128,12 @@ erDiagram
 | Campo | Tipo | Descripción |
 |---|---|---|
 | id | texto | Identificador, p. ej. `EDI-FRC-01` |
+| universidad_id | texto | Referencia a universidades (`UTN-FRC`) |
 | nombre / nombre_corto | texto | Nombre completo y abreviado |
 | direccion | texto | Dirección del suministro |
 | distribuidora | texto | `EPEC` |
 | cliente_n / contrato_n | texto | Números de cliente y contrato de la factura |
+| medidor_n | texto | Número de medidor. Vacío hasta leerlo en la factura original |
 | tension | texto | Media o baja tensión |
 | tarifa | texto | Tarifa de la factura (3GDES) |
 
@@ -122,6 +142,7 @@ erDiagram
 | Campo | Tipo | Unidad | Descripción |
 |---|---|---|---|
 | id | texto | | Identificador `ACT-001` |
+| dimension_id | entero | | Referencia a dimensiones (`1`, Energía eléctrica) |
 | edificio_id | texto | | Referencia a edificios |
 | periodo | texto | AAAA-MM | Mes de consumo |
 | comprobante | texto | | Número de comprobante EPEC |
@@ -153,9 +174,11 @@ erDiagram
 | Campo | Tipo | Descripción |
 |---|---|---|
 | actividad_id | texto | Dato de actividad que lo originó |
+| dimension_id | entero | Referencia a dimensiones (`1`) |
 | edificio_id, periodo | texto | Claves para consultar |
 | consumo_kwh | número | Consumo usado |
-| factor_emision_kgco2e_kwh | número | Factor aplicado |
+| factor_id | texto | Referencia al factor de emisión usado |
+| factor_emision_kgco2e_kwh | número | Valor del factor aplicado |
 | emisiones_kgco2e, emisiones_tco2e | número | Resultado |
 | alcance | entero | `2` |
 | formula | texto | Fórmula aplicada |
@@ -193,6 +216,23 @@ Cómo completarla:
 
 Mientras `VITE_CENTRAL_API_URL` esté vacío, las consultas devuelven los datos locales y la pantalla lo indica. Los envíos muestran un aviso y los datos quedan solo en el navegador.
 
+**Qué se envía**
+- Cada registro lleva `universidad_id` y `dimension_id`, porque la API central recibe datos de todos los grupos.
+- Solo se envían las cargas hechas en el navegador que todavía no se mandaron. Primero va el dato de actividad y, cuando la API lo acepta, su resultado (con `factor_id` y la fórmula). Lo enviado queda marcado para no duplicarlo y ya no se puede quitar desde el navegador.
+- Los resultados van redondeados a gramos (kgCO₂e con 3 decimales).
+
+**Qué pasa si la API responde algo inesperado**
+- Si un factor de emisión trae una unidad que el módulo no reconoce, no se usa y se avisa en pantalla. Se aceptan variantes de escritura como `kg CO2/kWh`, `kgCO₂e/kWh`, `tCO2eq/MWh`, `g CO2e/kWh`.
+- Si una consulta no devuelve una lista, se usan los datos locales y se muestra el error.
+
+**API de prueba local:** `npm run api-de-prueba` levanta en `http://127.0.0.1:4180` una API que imita a la de la cátedra (con las rutas de arriba), para probar la integración mientras la real no exista. No es una API propia del módulo: solo sirve para probar en la PC. Se usa así:
+
+```bash
+npm run api-de-prueba
+# en otra terminal:
+VITE_CENTRAL_API_URL=http://127.0.0.1:4180 npm run dev
+```
+
 Limitaciones: las variables `VITE_*` quedan visibles en el código del navegador, y la API de la cátedra debe permitir CORS.
 
 ## 8. Capturas del módulo
@@ -228,6 +268,8 @@ Con el factor de referencia 0,343 el total sería 41,23 tCO₂e. La diferencia (
 | 6 | Horarios de pico, resto y valle | No se verificaron en el cuadro tarifario de EPEC. |
 | 7 | Lecturas de las facturas | Capturas de baja resolución; la columna de multiplicador del medidor no se lee. Verificar contra el PDF. |
 | 8 | Quién entrega las facturas | A confirmar con la facultad (área administrativa o de mantenimiento). |
+| 9 | Potencia autorizada | En Ciudad Universitaria figura 150 kW de potencia autorizada contra 517/544 kW de demanda facturada; en Av. Armada, 46 kW contra 55/52 kW. Parece un error de lectura de la imagen. Verificar contra la factura. No cambia las emisiones (no se usa en el cálculo). |
+| 10 | Número de medidor | Se agregó el campo `medidor_n` al modelo; queda vacío hasta leerlo en la factura original. |
 
 ## 10. Calidad y limitaciones de los datos
 
@@ -244,10 +286,20 @@ Con el factor de referencia 0,343 el total sería 41,23 tCO₂e. La diferencia (
 - Las sumas de kWh y las emisiones se recalcularon por separado y coinciden con el módulo.
 - Los colores de los gráficos se validaron con un script de accesibilidad (diferenciación para daltonismo y contraste).
 - La aplicación se compiló y se probó en modo claro, oscuro y celular, sin errores de consola.
-- La integración con la API se probó solo sin API configurada (datos locales). Con la API real no se pudo probar porque todavía no existe.
+- `npm test` corre 35 pruebas de las funciones de cálculo, validación, cobertura anual y ejes de los gráficos (`tests/calculo.test.mjs`).
+- La integración se probó con la API de prueba local (`tests/api-de-prueba.mjs`): consultas, factor escrito como en SNIGEIAR, factor con unidad inválida, envío de datos y resultados sin duplicados. Con la API real de la cátedra todavía no se pudo probar.
+
+**Revisión y correcciones (13/11/2026).** Una revisión con IA encontró y corrigió:
+- La cobertura anual contaba meses distintos sin mirar el año ni el suministro: podía decir "año completo" con un suministro en un solo mes. Ahora se elige el año y se cuentan los 12 meses de cada suministro.
+- Se aceptaban meses futuros. Ahora se rechazan.
+- Los ejes de los gráficos marcaban 0, 13, 25, 38, 50. Ahora usan pasos redondos.
+- Con 12 meses las etiquetas del gráfico de evolución se superponían, y los meses salteados se unían con una línea. Ahora el gráfico muestra los 12 meses del año y corta la línea donde falta un mes.
+- Un factor escrito "kg CO2/kWh" (como en la tabla de SNIGEIAR) dejaba la página en blanco. Ahora se acepta, y las unidades desconocidas se descartan con un aviso.
+- Los envíos no indicaban universidad ni dimensión, mandaban resultados de datos no enviados y se duplicaban en cada clic. Corregido (ver sección 7).
+- Alcance 1 y 3 mostraban "0,00 t", que parecía una medición. Ahora dicen "No aplica" y "No incluido".
 
 **Qué debe validar el equipo**
 - Los números transcriptos de las facturas, contra el PDF original.
-- Que el factor de emisión sea el que indique la cátedra.
+- Que el factor de emisión sea el que indique la cátedra, y si 0,283 se toma como CO₂e o solo CO₂ (supuesto 4).
 - Las rutas y campos de la API central, cuando estén disponibles.
 - La asignación de suministros a edificios.

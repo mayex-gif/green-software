@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { aKwh, consumoTotalKwh } from "../lib/calculo.js";
-import { avisosActividad, validarActividad } from "../lib/validacion.js";
+import { avisosActividad, mesActual, validarActividad } from "../lib/validacion.js";
 import { fmt, periodoLegible } from "../lib/format.js";
 
 const VACIO = {
@@ -21,7 +21,7 @@ function Campo({ id, label, hint, error, children }) {
   );
 }
 
-export default function Carga({ edificios, actividades, locales, onAgregar, onQuitar }) {
+export default function Carga({ edificios, actividades, locales, enviados = [], onAgregar, onQuitar }) {
   const [form, setForm] = useState(VACIO);
   const [errores, setErrores] = useState({});
   const [confirmacion, setConfirmacion] = useState("");
@@ -88,7 +88,7 @@ export default function Carga({ edificios, actividades, locales, onAgregar, onQu
               </select>
             </Campo>
             <Campo id="periodo" label="Mes de consumo" error={errores.periodo}>
-              <input type="month" {...props("periodo")} />
+              <input type="month" max={mesActual()} {...props("periodo")} />
             </Campo>
             <Campo id="comprobante" label="Comprobante (opcional)" hint="Número que figura en la factura.">
               <input type="text" {...props("comprobante")} />
@@ -163,22 +163,27 @@ export default function Carga({ edificios, actividades, locales, onAgregar, onQu
               </tr>
             </thead>
             <tbody>
-              {ordenadas.map((a) => (
-                <tr key={a.id}>
-                  <td>{nombreEdificio(a.edificio_id)}</td>
-                  <td>{periodoLegible(a.periodo)}</td>
-                  <td className="num">{fmt(a.pico_kwh)}</td>
-                  <td className="num">{fmt(a.resto_kwh)}</td>
-                  <td className="num">{fmt(a.valle_kwh)}</td>
-                  <td className="num">{fmt(consumoTotalKwh(a))}</td>
-                  <td>{locales.some((l) => l.id === a.id) ? "Cargado aquí" : "Relevamiento base"}</td>
-                  <td>
-                    {locales.some((l) => l.id === a.id) && (
-                      <button className="btn btn-quiet" type="button" onClick={() => onQuitar(a.id)}>Quitar</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {ordenadas.map((a) => {
+                const local = locales.some((l) => l.id === a.id);
+                const enviado = local && enviados.includes(a.id);
+                return (
+                  <tr key={a.id}>
+                    <td>{nombreEdificio(a.edificio_id)}</td>
+                    <td>{periodoLegible(a.periodo)}</td>
+                    <td className="num">{fmt(a.pico_kwh)}</td>
+                    <td className="num">{fmt(a.resto_kwh)}</td>
+                    <td className="num">{fmt(a.valle_kwh)}</td>
+                    <td className="num">{fmt(consumoTotalKwh(a))}</td>
+                    <td>{!local ? "Relevamiento base" : enviado ? "Enviado a la API" : "Cargado aquí"}</td>
+                    <td>
+                      {/* Lo ya enviado no se quita acá: borrarlo del navegador no lo borra de la API central. */}
+                      {local && !enviado && (
+                        <button className="btn btn-quiet" type="button" onClick={() => onQuitar(a.id)}>Quitar</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

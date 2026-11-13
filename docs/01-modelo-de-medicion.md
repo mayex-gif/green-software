@@ -51,9 +51,10 @@ Conversiones que hace el módulo:
 
 ## 4. Periodicidad
 
-- **Dato de entrada: mensual** (una factura por suministro y mes).
-- **Resultado del inventario: anual**, como pide la consigna. Se necesitan los 12 meses; con menos, el módulo avisa que el total no representa el año.
-- Ventana propuesta: 12 meses consecutivos que cubran las facturas disponibles. **A definir con la cátedra** (por ejemplo, sep 2025 a ago 2026).
+- **Dato de entrada: mensual** (una factura por suministro y mes). No se aceptan meses futuros.
+- **Resultado del inventario: anual**, como pide la consigna. El año del inventario es el **año calendario** (enero a diciembre) y se elige en la pantalla de Resultados.
+- **Cobertura por suministro:** el año está completo solo cuando **cada** suministro tiene sus 12 meses de ese año. Si a alguno le falta un mes, el módulo avisa que el total no representa el año y muestra cuántos meses tiene cada uno.
+- Si la cátedra define otra ventana de 12 meses (por ejemplo, sep a ago), hay que cambiar el filtro por año (`anioDe` y `coberturaAnual` en `src/lib/calculo.js`).
 
 ## 5. Alcance
 
@@ -70,4 +71,4 @@ Método de contabilidad: **basado en ubicación** (*location-based*), con el fac
 
 1. Datos de actividad (kWh por franja, por suministro y mes) para la API central.
 2. Resultados de emisiones (kgCO₂e y tCO₂e), con la fórmula y el factor usado.
-3. Indicadores propios de la dimensión: energía en pico (%), costo medio ($/kWh), demanda máxima, coseno φ y cobertura anual.
+3. Indicadores propios de la dimensión: energía en pico (%), costo medio ($/kWh), demanda máxima, coseno φ y cobertura anual por suministro.

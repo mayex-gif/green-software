@@ -21,27 +21,71 @@ export function aKwh(valor, unidad = "kWh") {
   return Number(valor) * f;
 }
 
-/** Devuelve el factor en kgCO2e/kWh, sea cual sea la unidad con la que viene. */
+/**
+ * Devuelve el factor en kgCO2e/kWh, sea cual sea la unidad con la que viene.
+ * Acepta variantes de escritura ("kg CO2/kWh", "kgCO₂e/kWh", "tCO2eq/MWh").
+ * Devuelve null si la unidad no se reconoce o el valor no es un número positivo:
+ * así un dato inesperado de la API no deja la página en blanco.
+ */
 export function factorEnKgPorKwh(factor) {
-  const u = String(factor.unidad || "").replace(/\s/g, "");
+  const valor = Number(factor?.valor);
+  if (!Number.isFinite(valor) || valor <= 0) return null;
+  const u = String(factor?.unidad || "")
+    .replace(/\s/g, "")
+    .replace(/₂/g, "2")
+    .toLowerCase()
+    .replace(/co2(eq|e)?/, "co2e");
   switch (u) {
-    case "kgCO2e/kWh":
-    case "tCO2e/MWh": // 1 t/MWh == 1 kg/kWh
-      return Number(factor.valor);
-    case "gCO2e/kWh":
-      return Number(factor.valor) / 1000;
-    case "tCO2e/kWh":
-      return Number(factor.valor) * 1000;
+    case "kgco2e/kwh":
+    case "tco2e/mwh": // 1 t/MWh == 1 kg/kWh
+      return valor;
+    case "gco2e/kwh":
+    case "kgco2e/mwh":
+      return valor / 1000;
+    case "tco2e/kwh":
+      return valor * 1000;
     default:
-      throw new Error(`Unidad de factor no soportada: ${factor.unidad}`);
+      return null;
   }
 }
 
+/** true si el factor tiene una unidad conocida y un valor utilizable. */
+export const factorValido = (factor) => factorEnKgPorKwh(factor) !== null;
+
 export const consumoTotalKwh = (a) => FRANJAS.reduce((s, f) => s + Number(a[f.clave] || 0), 0);
+
+/** "2024-08" -> "2024" */
+export const anioDe = (periodo) => String(periodo || "").slice(0, 4);
+
+/** Años (calendario) que tienen al menos un dato de actividad, ordenados. */
+export function aniosConDatos(actividades) {
+  return [...new Set(actividades.map((a) => anioDe(a.periodo)))].filter((a) => /^\d{4}$/.test(a)).sort();
+}
+
+/**
+ * Cobertura del año del inventario: cuántos meses tiene cada suministro dentro del año.
+ * El año está completo solo si TODOS los suministros tienen sus 12 meses.
+ */
+export function coberturaAnual(actividadesDelAnio, edificios) {
+  const meses = new Map(edificios.map((e) => [e.id, new Set()]));
+  for (const a of actividadesDelAnio) {
+    if (!meses.has(a.edificio_id)) meses.set(a.edificio_id, new Set());
+    meses.get(a.edificio_id).add(a.periodo);
+  }
+  const porEdificio = [...meses.entries()].map(([edificio_id, s]) => ({ edificio_id, meses: s.size }));
+  const completos = porEdificio.filter((e) => e.meses >= 12).length;
+  return {
+    porEdificio,
+    completos,
+    total: porEdificio.length,
+    completo: porEdificio.length > 0 && completos === porEdificio.length,
+  };
+}
 
 /** Calcula las emisiones de un dato de actividad y deja la traza paso a paso. */
 export function calcularActividad(a, factor) {
   const fe = factorEnKgPorKwh(factor);
+  if (fe === null) throw new Error(`Factor de emisión no utilizable: ${factor?.valor} ${factor?.unidad}`);
   const consumo = consumoTotalKwh(a);
   const kg = consumo * fe;
 
@@ -101,6 +145,7 @@ export function resumir(resultados, actividades) {
   const pico = actividades.reduce((s, a) => s + Number(a.pico_kwh || 0), 0);
   const conCosto = actividades.filter((a) => a.total_facturado_ars);
   const kwhConCosto = conCosto.reduce((s, a) => s + consumoTotalKwh(a), 0);
+  const cosenos = actividades.map((a) => Number(a.coseno_fi)).filter((c) => c > 0);
 
   return {
     totalKwh: total.kwh,
@@ -109,15 +154,24 @@ export function resumir(resultados, actividades) {
     porEdificio,
     porPeriodo,
     periodos,
-    mesesCargados: periodos.length,
     pctPico: total.kwh ? (pico / total.kwh) * 100 : 0,
     costoMedioPorKwh: kwhConCosto ? conCosto.reduce((s, a) => s + Number(a.total_facturado_ars), 0) / kwhConCosto : null,
-    cosenoMin: actividades.length ? Math.min(...actividades.map((a) => Number(a.coseno_fi)).filter(Boolean)) : null,
+    cosenoMin: cosenos.length ? Math.min(...cosenos) : null,
     demandaPicoMax: actividades.length ? Math.max(...actividades.map((a) => Number(a.demanda_pico_kw || 0))) : null,
   };
 }
 
-/** Arma el cuerpo que se envía a la API: resultados con su traza y trazabilidad. */
+const redondear = (n, decimales) => Math.round(n * 10 ** decimales) / 10 ** decimales;
+
+/**
+ * Arma el cuerpo que se envía a la API: cada resultado con el dato de actividad y el factor que lo
+ * originaron (trazabilidad). Se redondea a gramos para no mandar ruido de coma flotante (26884.999999…).
+ */
 export function armarResultadosParaApi(resultados) {
-  return resultados.map(({ traza, por_franja, ...r }) => ({ ...r, calculado_en: new Date().toISOString() }));
+  return resultados.map(({ traza, por_franja, ...r }) => ({
+    ...r,
+    emisiones_kgco2e: redondear(r.emisiones_kgco2e, 3),
+    emisiones_tco2e: redondear(r.emisiones_tco2e, 6),
+    calculado_en: new Date().toISOString(),
+  }));
 }

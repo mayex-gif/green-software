@@ -14,6 +14,9 @@ const LOCAL = {
   actividad: seed.datos_actividad,
 };
 
+// Todo lo que se envía lleva la universidad y la dimensión: la API central recibe datos de los 16 grupos.
+const CONTEXTO = { universidad_id: seed.universidad.id, dimension_id: seed.dimension.id };
+
 const configurada = () => Boolean(CONFIG.baseUrl);
 
 async function llamar(clave, opciones = {}) {
@@ -37,7 +40,9 @@ async function obtener(clave) {
   if (!configurada()) return { source: "local", configured: false, data: LOCAL[clave] };
   try {
     // TODO: si la API devuelve los datos dentro de un objeto (p. ej. { items: [...] }), extraerlos acá.
-    return { source: "central", configured: true, data: await llamar(clave) };
+    const data = await llamar(clave);
+    if (!Array.isArray(data)) throw new Error("La API central devolvió un formato inesperado (se esperaba una lista).");
+    return { source: "central", configured: true, data };
   } catch (error) {
     return { source: "local-fallback", configured: true, error: error.message, data: LOCAL[clave] };
   }
@@ -54,5 +59,5 @@ async function enviar(clave, cuerpo) {
 export const getFactoresEmision = () => obtener("factores");
 export const getEdificios = () => obtener("edificios");
 export const getDatosActividad = () => obtener("actividad");
-export const postDatosActividad = (registros) => enviar("actividad", registros);
-export const postResultados = (resultados) => enviar("resultados", resultados);
+export const postDatosActividad = (registros) => enviar("actividad", registros.map((r) => ({ ...CONTEXTO, ...r })));
+export const postResultados = (resultados) => enviar("resultados", resultados.map((r) => ({ ...CONTEXTO, ...r })));

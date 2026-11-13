@@ -1,7 +1,7 @@
 import { factorEnKgPorKwh } from "../lib/calculo.js";
 import { fmt, periodoLegible } from "../lib/format.js";
 
-export default function Calculo({ factores, factorId, onFactor, resultados, edificios }) {
+export default function Calculo({ factores, factorId, onFactor, resultados, edificios, factoresDescartados }) {
   const factor = factores.find((f) => f.id === factorId);
   const nombre = (id) => edificios.find((e) => e.id === id)?.nombre_corto || id;
 
@@ -23,6 +23,13 @@ export default function Calculo({ factores, factorId, onFactor, resultados, edif
         </select>
         {factor && <span className="hint">{factor.fuente}</span>}
       </div>
+      {factoresDescartados > 0 && (
+        <p className="aviso">
+          {factoresDescartados === 1
+            ? "Un factor de emisión de la API tiene una unidad que el módulo no reconoce. No aparece en la lista."
+            : `${factoresDescartados} factores de emisión de la API tienen una unidad que el módulo no reconoce. No aparecen en la lista.`}
+        </p>
+      )}
 
       <div className="traza-list">
         {resultados.length === 0 && <p className="empty">Todavía no hay datos de actividad. Cargá un mes en la pestaña Carga.</p>}
