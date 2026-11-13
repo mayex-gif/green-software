@@ -1,0 +1,148 @@
+{
+  "universidad": {
+    "id": "UTN-FRC",
+    "nombre": "Universidad Tecnológica Nacional - Facultad Regional Córdoba"
+  },
+  "dimension": {
+    "id": 1,
+    "nombre": "Energía eléctrica",
+    "grupo": 1
+  },
+  "unidades": [
+    {
+      "codigo": "kWh",
+      "descripcion": "Kilovatio-hora"
+    },
+    {
+      "codigo": "kW",
+      "descripcion": "Kilovatio (potencia)"
+    },
+    {
+      "codigo": "kgCO2e",
+      "descripcion": "Kilogramos de CO2 equivalente"
+    },
+    {
+      "codigo": "tCO2e",
+      "descripcion": "Toneladas de CO2 equivalente"
+    }
+  ],
+  "fuentes_datos": [
+    {
+      "id": "FD-01",
+      "nombre": "Facturas EPEC",
+      "responsable": "A completar (área que gestiona los pagos de la facultad)"
+    }
+  ],
+  "edificios": [
+    {
+      "id": "EDI-FRC-01",
+      "nombre": "Ciudad Universitaria (suministro media tensión)",
+      "direccion": "Maestro López esq. Cruz Roja Argentina, Córdoba (Mza 022 Lote 006)",
+      "distribuidora": "EPEC",
+      "cliente_n": "00335024",
+      "contrato_n": "00420551/02",
+      "tension": "Media Tensión",
+      "tarifa": "3GDES.CON (cód. 350)",
+      "nombre_corto": "Ciudad Universitaria"
+    },
+    {
+      "id": "EDI-FRC-02",
+      "nombre": "Suministro Av. Armada Argentina 4050 (baja tensión)",
+      "direccion": "Av. Armada Argentina 4050, Sta. Isabel 3ª, Córdoba",
+      "distribuidora": "EPEC",
+      "cliente_n": "00071121",
+      "contrato_n": "00592560/04",
+      "tension": "Baja Tensión",
+      "tarifa": "3GDES.CO (cód. 350)",
+      "nombre_corto": "Av. Armada Argentina"
+    }
+  ],
+  "factores_emision": [
+    {
+      "id": "FE-ELEC-ARG-2022",
+      "descripcion": "Electricidad de red, Argentina",
+      "valor": 0.283,
+      "unidad": "kgCO2e/kWh",
+      "anio": 2022,
+      "gases": "CO2, CH4, N2O (AR5)",
+      "fuente": "SNIGEIAR - Factores de Emisión GEI 2025, Tabla 5 (inventariogei.ambiente.gob.ar)",
+      "por_defecto": true,
+      "oficial": true
+    },
+    {
+      "id": "FE-ELEC-ARG-2025-EMBER",
+      "descripcion": "Electricidad de red, Argentina (referencia de tercero)",
+      "valor": 0.343,
+      "unidad": "kgCO2e/kWh",
+      "anio": 2025,
+      "gases": "CO2e",
+      "fuente": "Ember (datos anuales de electricidad, CC BY 4.0), según carbonrecycling.co.uk",
+      "por_defecto": false,
+      "oficial": false
+    }
+  ],
+  "datos_actividad": [
+    {
+      "edificio_id": "EDI-FRC-01",
+      "periodo": "2024-08",
+      "comprobante": "F 000683514600",
+      "pico_kwh": 22950,
+      "resto_kwh": 65556,
+      "valle_kwh": 16182,
+      "demanda_pico_kw": 517,
+      "demanda_fuera_pico_kw": 544,
+      "demanda_autorizada_kw": 150,
+      "coseno_fi": 0.9904,
+      "total_facturado_ars": 21899102.2,
+      "id": "ACT-001",
+      "consumo_kwh": 104688,
+      "unidad": "kWh",
+      "alcance": 2,
+      "fuente_dato": "Factura EPEC (liquidación de servicios públicos B)",
+      "calidad": "real - transcripto de factura (imagen de baja resolución, verificar)"
+    },
+    {
+      "edificio_id": "EDI-FRC-02",
+      "periodo": "2024-08",
+      "comprobante": "F 000683515888",
+      "pico_kwh": 3795,
+      "resto_kwh": 8408,
+      "valle_kwh": 3313,
+      "demanda_pico_kw": 55,
+      "demanda_fuera_pico_kw": 52,
+      "demanda_autorizada_kw": 46,
+      "coseno_fi": 0.9967,
+      "total_facturado_ars": 3345500.7,
+      "id": "ACT-002",
+      "consumo_kwh": 15516,
+      "unidad": "kWh",
+      "alcance": 2,
+      "fuente_dato": "Factura EPEC (liquidación de servicios públicos B)",
+      "calidad": "real - transcripto de factura (imagen de baja resolución, verificar)"
+    }
+  ],
+  "resultados_emisiones": [
+    {
+      "actividad_id": "ACT-001",
+      "edificio_id": "EDI-FRC-01",
+      "periodo": "2024-08",
+      "consumo_kwh": 104688,
+      "factor_emision_kgco2e_kwh": 0.283,
+      "emisiones_kgco2e": 29626.7,
+      "emisiones_tco2e": 29.627,
+      "alcance": 2,
+      "formula": "CO2e [kg] = consumo [kWh] x FE [kgCO2e/kWh]"
+    },
+    {
+      "actividad_id": "ACT-002",
+      "edificio_id": "EDI-FRC-02",
+      "periodo": "2024-08",
+      "consumo_kwh": 15516,
+      "factor_emision_kgco2e_kwh": 0.283,
+      "emisiones_kgco2e": 4391.03,
+      "emisiones_tco2e": 4.391,
+      "alcance": 2,
+      "formula": "CO2e [kg] = consumo [kWh] x FE [kgCO2e/kWh]"
+    }
+  ]
+}

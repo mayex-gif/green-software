@@ -1,0 +1,115 @@
+{
+  "descripcion": "Ajustes de la tarifa de EPEC relevados para el período sep 2025 - sep 2026. Sirven para proyectar el COSTO de la factura, no las emisiones (las emisiones dependen de kWh).",
+  "advertencia": "Los porcentajes son promedios de la empresa o del componente VAD; no son el cuadro tarifario de Grandes Demandas (3GDES). Los meses en null no se pudieron confirmar en fuentes abiertas.",
+  "periodo_cubierto": "2025-09 a 2026-09",
+  "meses": [
+    {
+      "mes": "2025-09",
+      "componente": "VAD (FAM)",
+      "porcentaje": 2.02,
+      "estado": "informado",
+      "fuente": "eldoce.tv 2025-11-03"
+    },
+    {
+      "mes": "2025-10",
+      "componente": "VAD (FAM)",
+      "porcentaje": 2.89,
+      "estado": "informado",
+      "fuente": "eldoce.tv 2025-11-03"
+    },
+    {
+      "mes": "2025-11",
+      "componente": "VAD (FAM)",
+      "porcentaje": 3.39,
+      "estado": "autorizado; el impacto en boleta sería menor",
+      "fuente": "eldoce.tv / cadena3 / derechadiario"
+    },
+    {
+      "mes": "2025-12",
+      "componente": "VAD (FAM)",
+      "porcentaje": null,
+      "estado": "sin dato confirmado (se aplicó en enero 2026 según Perfil)",
+      "fuente": null
+    },
+    {
+      "mes": "2026-01",
+      "componente": "MEM baja / VAD con ajuste dic-2025",
+      "porcentaje": null,
+      "estado": "sin dato confirmado",
+      "fuente": null
+    },
+    {
+      "mes": "2026-02",
+      "componente": "MEM + VAD",
+      "incidencia_mem_pct": 6.79,
+      "incidencia_vad_pct": 0.83,
+      "porcentaje": null,
+      "estado": "incidencias sobre tarifa final",
+      "fuente": "Perfil Córdoba 2026-10-15"
+    },
+    {
+      "mes": "2026-03",
+      "componente": "-",
+      "porcentaje": null,
+      "estado": "sin dato confirmado",
+      "fuente": null
+    },
+    {
+      "mes": "2026-04",
+      "componente": "-",
+      "porcentaje": null,
+      "estado": "sin dato confirmado (ViaPais indica nueva suba en abril)",
+      "fuente": "viapais.com.ar"
+    },
+    {
+      "mes": "2026-05",
+      "componente": "MEM + VAD",
+      "incidencia_mem_pct": 8.67,
+      "incidencia_vad_pct": 1.02,
+      "porcentaje": null,
+      "estado": "incidencias sobre tarifa final",
+      "fuente": "Perfil Córdoba 2026-10-15"
+    },
+    {
+      "mes": "2026-06",
+      "componente": "MEM baja",
+      "porcentaje": null,
+      "estado": "sin dato confirmado",
+      "fuente": "Perfil Córdoba 2026-10-15"
+    },
+    {
+      "mes": "2026-07",
+      "componente": "-",
+      "porcentaje": null,
+      "estado": "sin dato confirmado",
+      "fuente": null
+    },
+    {
+      "mes": "2026-08",
+      "componente": "-",
+      "porcentaje": null,
+      "estado": "sin dato confirmado",
+      "fuente": null
+    },
+    {
+      "mes": "2026-09",
+      "componente": "-",
+      "porcentaje": null,
+      "estado": "sin dato confirmado",
+      "fuente": null
+    },
+    {
+      "mes": "2026-10",
+      "componente": "VAD",
+      "porcentaje": 0.86,
+      "estado": "informado (fuera del año pedido, referencia)",
+      "fuente": "Perfil Córdoba 2026-10-15"
+    }
+  ],
+  "acumulados_2026_ene_oct": {
+    "tarifa_final_pct": 44.43,
+    "mem_pct": 29.83,
+    "vad_promedio_pct": 11.25,
+    "nota": "Los acumulados no se suman: se aplican en cadena."
+  }
+}
